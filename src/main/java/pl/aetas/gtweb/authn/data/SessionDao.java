@@ -8,6 +8,7 @@ import pl.aetas.gtweb.authn.domain.Session;
 
 import javax.inject.Inject;
 import java.util.Date;
+import java.util.UUID;
 
 @Repository
 public class SessionDao {
@@ -21,7 +22,9 @@ public class SessionDao {
 
     // TODO create Session always with TTL for 30 minutes
     public Session create(String username) {
-        BasicDBObject sessionDbObject = new BasicDBObject("user_id", username)
+        String sessionId = UUID.randomUUID().toString();
+        BasicDBObject sessionDbObject = new BasicDBObject("_id", sessionId)
+                .append("user_id", username)
                 .append("create_time", new Date())
                 .append("last_accessed_time", new Date());
 

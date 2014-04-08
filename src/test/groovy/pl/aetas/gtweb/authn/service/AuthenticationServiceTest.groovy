@@ -6,6 +6,7 @@ import pl.aetas.gtweb.authn.domain.User
 import spock.lang.Specification
 
 import javax.ws.rs.WebApplicationException
+import javax.ws.rs.core.Response
 
 class AuthenticationServiceTest extends Specification {
 
@@ -27,18 +28,19 @@ class AuthenticationServiceTest extends Specification {
         when:
         authenticationService.login('goodUsername', 'secretPass')
         then:
-        1 * sessionDao.create('goodUsername')
+        1 * sessionDao.create('goodUsername') >> Mock(Session)
     }
 
-    def "should return created session when session has been created"() {
+    def "should return response with session when session has been created"() {
         given:
         userDao.findEnabled('goodUsername', 'secretPass') >> Mock(User)
         def expectedSession = Mock(Session)
         sessionDao.create('goodUsername') >> expectedSession
         when:
-        Session session = authenticationService.login('goodUsername', 'secretPass')
+        Response response = authenticationService.login('goodUsername', 'secretPass')
         then:
-        session == expectedSession
+        response.getStatus() == 201
+        response.getEntity() == expectedSession
     }
 
     def "should throw exception when user with given password has not been found"() {
