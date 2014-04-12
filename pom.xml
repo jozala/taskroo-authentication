@@ -16,8 +16,6 @@
         <groovy.version>2.2.2</groovy.version>
     </properties>
 
-    <!-- TODO none of the unit tests is run -->
-    <!-- TODO there are no acceptance tests - write some -->
     <build>
         <finalName>gtweb-authentication</finalName>
         <plugins>
