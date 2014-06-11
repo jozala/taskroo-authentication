@@ -14,7 +14,7 @@ import java.net.URI;
 
 
 @Component
-@Path("session")
+@Path("authToken")
 public class AuthenticationService {
 
     private final SessionDao sessionDao;
@@ -26,6 +26,7 @@ public class AuthenticationService {
         this.userDao = userDao;
     }
 
+    @Path("login")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -37,7 +38,7 @@ public class AuthenticationService {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
         Session session = sessionDao.create(username);
-        return Response.created(URI.create("session/" + session.getSessionId())).entity(session).build();
+        return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
 
     @DELETE
