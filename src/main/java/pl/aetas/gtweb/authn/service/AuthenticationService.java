@@ -5,6 +5,7 @@ import pl.aetas.gtweb.authn.data.SessionDao;
 import pl.aetas.gtweb.authn.data.UserDao;
 import pl.aetas.gtweb.authn.domain.Session;
 import pl.aetas.gtweb.authn.domain.User;
+import pl.aetas.gtweb.authn.domain.UserCredentials;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
@@ -29,15 +30,15 @@ public class AuthenticationService {
     @Path("login")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    public Response login(@FormParam("username") String username, @FormParam("password") String password) {
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response login(UserCredentials credentials) {
         // TODO encode password before looking in the db
         // TODO it is probably better to prepare service responsible for user login checks
-        User user = userDao.findEnabled(username, password);
+        User user = userDao.findEnabled(credentials.getUsername(), credentials.getPassword());
         if (user == null) {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).build());
         }
-        Session session = sessionDao.create(username);
+        Session session = sessionDao.create(credentials.getUsername());
         return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
 

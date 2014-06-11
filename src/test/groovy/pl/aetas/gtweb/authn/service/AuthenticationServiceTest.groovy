@@ -3,6 +3,7 @@ import pl.aetas.gtweb.authn.data.SessionDao
 import pl.aetas.gtweb.authn.data.UserDao
 import pl.aetas.gtweb.authn.domain.Session
 import pl.aetas.gtweb.authn.domain.User
+import pl.aetas.gtweb.authn.domain.UserCredentials
 import spock.lang.Specification
 
 import javax.ws.rs.WebApplicationException
@@ -26,7 +27,7 @@ class AuthenticationServiceTest extends Specification {
         given:
         userDao.findEnabled('goodUsername', 'secretPass') >> Mock(User)
         when:
-        authenticationService.login('goodUsername', 'secretPass')
+        authenticationService.login(new UserCredentials('goodUsername', 'secretPass'))
         then:
         1 * sessionDao.create('goodUsername') >> Mock(Session)
     }
@@ -37,7 +38,7 @@ class AuthenticationServiceTest extends Specification {
         def expectedSession = Mock(Session)
         sessionDao.create('goodUsername') >> expectedSession
         when:
-        Response response = authenticationService.login('goodUsername', 'secretPass')
+        Response response = authenticationService.login(new UserCredentials('goodUsername', 'secretPass'))
         then:
         response.getStatus() == 201
         response.getEntity() == expectedSession
@@ -47,7 +48,7 @@ class AuthenticationServiceTest extends Specification {
         given:
         userDao.findEnabled('goodUsername', 'secretPass') >> null
         when:
-        authenticationService.login('goodUsername', 'secretPass')
+        authenticationService.login(new UserCredentials('goodUsername', 'secretPass'))
         then:
         thrown(WebApplicationException)
     }

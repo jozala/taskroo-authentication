@@ -30,13 +30,23 @@ class AuthenticationServiceAcceptanceTest extends Specification {
 
     def "should return 201 and session when new session has been created"() {
         when: 'sending correct login and password to service'
-        HttpResponseDecorator response = client.post(
+        def response = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD],
-                requestContentType: ContentType.URLENC)
+                requestContentType: ContentType.JSON)
         then:
         response.status == 201
         response.data.sessionId != null
+    }
+
+    def "should return 400 (bad request) when username not given"() {
+        when: 'sending only password to service'
+        def response = client.post(
+                path: 'authToken/login',
+                body: [password: PASSWORD],
+                requestContentType: ContentType.JSON)
+        then:
+        response.status == 400
     }
 
     def "should return 401 (unauthorized) when incorrect user details sent"() {
@@ -44,7 +54,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         HttpResponseDecorator response = client.post(
                 path: 'authToken/login',
                 body: [username: 'someName', password: 'incorrect'],
-                requestContentType: ContentType.URLENC)
+                requestContentType: ContentType.JSON)
         then:
         response.status == 401
     }
@@ -54,7 +64,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         HttpResponseDecorator createResponse = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD],
-                requestContentType: ContentType.URLENC)
+                requestContentType: ContentType.JSON)
         def sessionId = createResponse.data.sessionId
         when:
         def response = client.delete(path: "authToken/$sessionId")
