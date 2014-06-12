@@ -1,6 +1,7 @@
 package pl.aetas.gtweb.authn.domain;
 
 import java.security.Principal;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,16 +16,18 @@ public class User implements Principal {
     private final String password;
     private final Set<Role> roles;
     private final boolean enabled;
+    private final String salt;
 
-    private User(final String username, final String email, final String firstName, final String lastName, final String password, final Set<Role> roles,
-                 final boolean enabled) {
+    private User(String username, String email, String firstName, String lastName, String password, Set<Role> roles,
+                 boolean enabled, String salt) {
         this.username = username;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.password = password;
-        this.roles = roles;
+        this.roles = Collections.unmodifiableSet(roles);
         this.enabled = enabled;
+        this.salt = salt;
     }
 
     public String getUsername() {
@@ -60,6 +63,10 @@ public class User implements Principal {
         return getUsername();
     }
 
+    public String getSalt() {
+        return salt;
+    }
+
     public static class UserBuilder {
 
         private String username;
@@ -69,6 +76,7 @@ public class User implements Principal {
         private String password;
         private Set<Role> roles = new HashSet<>();
         private boolean enabled;
+        private String salt;
 
         private UserBuilder() {
             // use factory method start() instead
@@ -114,14 +122,8 @@ public class User implements Principal {
             return this;
         }
 
-        public UserBuilder update(final User user) {
-            this.username = user.getUsername();
-            this.email = user.getEmail();
-            this.firstName = user.getFirstName();
-            this.lastName = user.getLastName();
-            this.password = user.getPassword();
-            this.roles = new HashSet<>(user.getRoles());
-            this.enabled = user.isEnabled();
+        public UserBuilder salt(String salt) {
+            this.salt = salt;
             return this;
         }
 
@@ -132,7 +134,8 @@ public class User implements Principal {
             requireNonNull(lastName, "Last name has to be specified first. Actual [" + lastName + "]");
             requireNonNull(password, "Password has to be specified first. Actual [" + password + "]");
             requireNonNull(roles, "Roles has to be specified first. Actual [" + roles + "]");
-            return new User(username, email, firstName, lastName, password, roles, enabled);
+            requireNonNull(salt, "Salt has to be specified first. Actual [" + salt + "]");
+            return new User(username, email, firstName, lastName, password, roles, enabled, salt);
         }
 
     }

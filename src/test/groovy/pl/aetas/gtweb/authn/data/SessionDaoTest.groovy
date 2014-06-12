@@ -1,15 +1,8 @@
-package pl.aetas.gtweb.authn.integration
+package pl.aetas.gtweb.authn.data
 import com.mongodb.BasicDBObject
-import com.mongodb.DBCollection
 import org.joda.time.DateTime
-import pl.aetas.gtweb.authn.data.SessionDao
-import pl.aetas.gtweb.mongo.MongoConnector
-import spock.lang.Specification
 
-class SessionDaoTest extends Specification {
-
-    static MongoConnector mongoConnector = new MongoConnector('mongodb://localhost')
-    static DBCollection sessionsCollection = mongoConnector.gtWebDatabase.getCollection('sessions')
+class SessionDaoTest extends DaoTestBase {
 
     SessionDao sessionDao
 

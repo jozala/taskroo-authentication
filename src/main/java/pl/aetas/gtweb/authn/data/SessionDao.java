@@ -20,7 +20,6 @@ public class SessionDao {
         this.sessionsCollection = sessionsCollection;
     }
 
-    // TODO create Session always with TTL for 30 minutes
     public Session create(String username) {
         String sessionId = UUID.randomUUID().toString();
         BasicDBObject sessionDbObject = new BasicDBObject("_id", sessionId)

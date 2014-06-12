@@ -1,61 +1,54 @@
 package pl.aetas.gtweb.authn.data
 
-import com.mongodb.BasicDBList
 import com.mongodb.BasicDBObject
-import com.mongodb.DBCollection
 import pl.aetas.gtweb.authn.domain.Role
-import spock.lang.Specification
 
-class UserDaoTest extends Specification {
+class UserDaoTest extends DaoTestBase {
 
     UserDao userDao
 
-    // mocks
-    DBCollection usersCollection
-
     void setup() {
-        usersCollection = Mock(DBCollection)
+        cleanup()
         userDao = new UserDao(usersCollection)
-
     }
 
-    def "should retrieve from db enabled customers with matching username and password"() {
-        given:
-        BasicDBList rolesList = new BasicDBList()
-        rolesList << 'ADMIN' << 'USER'
-        when:
-        userDao.findEnabled('someUsername', 'secretPass')
-        then:
-        1 * usersCollection.findOne(new BasicDBObject([_id: 'someUsername', password: 'secretPass', enabled: true])) >>
-                new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
-                                   first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
-                                   roles: new BasicDBList() + ['ADMIN', 'USER']])
-
+    void cleanup() {
+        usersCollection.drop()
     }
 
-    def "should retrieve customer with mapped properties"() {
+    def "should retrieve from db customer with matching username and password"() {
         given:
-        usersCollection.findOne(new BasicDBObject([_id: 'someUsername', password: 'secretPass', enabled: true])) >>
-                new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
-                                   first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
-                                   roles: new BasicDBList() + ['ADMIN', 'USER']])
-
+        usersCollection.insert(new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
+                                                  first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
+                                                  roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
-        def user = userDao.findEnabled('someUsername', 'secretPass')
+        def user = userDao.findByUsername('someUsername')
         then:
-        user.username == 'someUsername'
-        user.email == 'some@email.co.uk'
+        user.name == 'someUsername'
+        user.password == 'givenPassword'
         user.enabled
         user.firstName == 'Fnametest'
         user.lastName == 'Lnametest'
-        user.roles == [Role.ADMIN, Role.USER] as Set
+        user.email == 'some@email.co.uk'
+        user.roles == [Role.ADMIN, Role.USER].toSet()
+        user.salt == 'someSaltValue'
+
     }
 
-    def "should return null when customer has not been found"() {
+    def "should return customer when customer with given username exists"() {
         given:
-        usersCollection.findOne(_) >> null
+        usersCollection.insert(new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
+                                                  first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
+                                                  roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
-        def user = userDao.findEnabled('nonExistingCustomer', 'somePassword')
+        def user = userDao.findByUsername('someUsername')
+        then:
+        user.name == 'someUsername'
+    }
+
+    def "should return null when customer with given username does not exists"() {
+        when:
+        def user = userDao.findByUsername('nonExistingCustomer')
         then:
         user == null
     }

@@ -22,8 +22,8 @@ class AuthenticationServiceAcceptanceTest extends Specification {
     public static final DBCollection usersCollection = db.getCollection("users")
 
     def setupSpec() {
-        def userMap = [_id: USERNAME, password: PASSWORD, enabled: true, first_name: 'fname', last_name: 'lname',
-                       email: 'email@aetas.pl', roles: ['USER']]
+        def userMap = [_id: USERNAME, password: 'B/HBxKhgF8mALBaOt+KUQRvWthU=', enabled: true, first_name: 'fname', last_name: 'lname',
+                       email: 'email@aetas.pl', roles: ['USER'], salt: 'F8Sgh1uJmuld8J7t9R+JOgq+vn8=']
         usersCollection.insert(new BasicDBObject(userMap))
         client.handler.failure = { it }
     }
@@ -34,9 +34,11 @@ class AuthenticationServiceAcceptanceTest extends Specification {
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD],
                 requestContentType: ContentType.JSON)
-        then:
+        then: "response is 201 with session information"
         response.status == 201
         response.data.sessionId != null
+        and: "session gets created in the DB"
+        sessionsCollection.count(new BasicDBObject('_id', response.data.sessionId)) == 1
     }
 
     def "should return 400 (bad request) when username not given"() {
@@ -49,14 +51,27 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         response.status == 400
     }
 
-    def "should return 401 (unauthorized) when incorrect user details sent"() {
+    def "should return 401 (unauthorized) when non-existing username sent"() {
         when: 'sending incorrect login and password to service'
-        HttpResponseDecorator response = client.post(
+        def response = client.post(
                 path: 'authToken/login',
-                body: [username: 'someName', password: 'incorrect'],
+                body: [username: 'nonExistingUsername', password: PASSWORD],
                 requestContentType: ContentType.JSON)
         then:
         response.status == 401
+    }
+
+    def "should return 401 (unauthorized) when user exists, but incorrect password given"() {
+        given:
+
+        when: 'sending incorrect login and password to service'
+        def response = client.post(
+                path: 'authToken/login',
+                body: [username: USERNAME, password: 'incorrect'],
+                requestContentType: ContentType.JSON)
+        then: 'response code is 401'
+        response.status == 401
+
     }
 
     def "should remove session and return 204 when deleting session"() {
