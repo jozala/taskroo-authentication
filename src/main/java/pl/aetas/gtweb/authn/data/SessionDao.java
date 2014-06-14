@@ -4,10 +4,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import org.springframework.stereotype.Repository;
+import pl.aetas.gtweb.authn.domain.Role;
 import pl.aetas.gtweb.authn.domain.Session;
+import pl.aetas.gtweb.authn.domain.User;
 
 import javax.inject.Inject;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository
@@ -20,16 +24,26 @@ public class SessionDao {
         this.sessionsCollection = sessionsCollection;
     }
 
-    public Session create(String username) {
+    public Session create(User user) {
         String sessionId = UUID.randomUUID().toString();
+        Set<Integer> rolesInInt = convertRolesToIntegers(user.getRoles());
         BasicDBObject sessionDbObject = new BasicDBObject("_id", sessionId)
-                .append("user_id", username)
+                .append("roles", rolesInInt)
+                .append("user_id", user.getUsername())
                 .append("create_time", new Date())
                 .append("last_accessed_time", new Date());
 
         sessionsCollection.insert(sessionDbObject);
 
         return mapDbObjectToSession(sessionDbObject);
+    }
+
+    private Set<Integer> convertRolesToIntegers(Set<Role> roles) {
+        Set<Integer> rolesInInt = new HashSet<>(roles.size());
+        for (Role role : roles) {
+            rolesInInt.add(role.intValue());
+        }
+        return rolesInInt;
     }
 
     private Session mapDbObjectToSession(DBObject sessionDbObject) {

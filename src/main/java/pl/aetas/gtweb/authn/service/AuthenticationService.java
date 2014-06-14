@@ -54,7 +54,7 @@ public class AuthenticationService {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("Incorrect password").build());
         }
 
-        Session session = sessionDao.create(credentials.getUsername());
+        Session session = sessionDao.create(user);
         LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
         return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
