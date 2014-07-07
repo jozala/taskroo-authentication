@@ -12,6 +12,6 @@ public class AuthnServiceApp extends ResourceConfig {
         register(JacksonFeature.class);
         register(ExceptionListener.class);
         register(RolesAllowedDynamicFeature.class);
-        packages("pl.aetas.gtweb.authn.service");
+        packages("pl.aetas.gtweb.authn.service", "com.wordnik.swagger.jersey.listing");
     }
 }

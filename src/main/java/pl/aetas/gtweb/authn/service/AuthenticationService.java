@@ -1,6 +1,10 @@
 package pl.aetas.gtweb.authn.service;
 
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -23,6 +27,7 @@ import java.security.spec.InvalidKeySpecException;
 
 @Component
 @Path("authToken")
+@Api(value = "authToken", description = "Session management")
 public class AuthenticationService {
 
     private final SessionDao sessionDao;
@@ -36,10 +41,14 @@ public class AuthenticationService {
         this.userDao = userDao;
     }
 
-    @Path("login")
+    @Path("/login")
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create session for the user", notes = "Returns session containing tokenId required for authorization", response=Session.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "session created correctly"),
+            @ApiResponse(code = 401, message = "user with given login and password not exists")})
     public Response login(UserCredentials credentials) {
         LOGGER.debug("Login request received for user " + credentials.getUsername());
         User user = userDao.findByUsername(credentials.getUsername());
@@ -71,7 +80,9 @@ public class AuthenticationService {
     }
 
     @DELETE
-    @Path("{sessionId}")
+    @Path("/{sessionId}")
+    @ApiOperation(value = "Delete session")
+    @ApiResponses(value = {@ApiResponse(code = 204, message = "session deleted")})
     public Response logout(@PathParam("sessionId") String sessionId) {
         sessionDao.remove(sessionId);
         return Response.noContent().build();
