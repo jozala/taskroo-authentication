@@ -4,7 +4,7 @@
 
     <groupId>pl.aetas.gtweb</groupId>
     <artifactId>gtweb-authentication</artifactId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.3.0</version>
     <packaging>war</packaging>
 
     <name>gtweb-authentication</name>
@@ -147,7 +147,7 @@
         <dependency>
             <groupId>pl.aetas.gtweb</groupId>
             <artifactId>gtweb-mongo-connector</artifactId>
-            <version>0.3.0-SNAPSHOT</version>
+            <version>0.3.0</version>
         </dependency>
 
         <!-- Jersey -->
