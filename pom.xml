@@ -2,12 +2,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>pl.aetas.gtweb</groupId>
-    <artifactId>gtweb-authentication</artifactId>
+    <groupId>com.taskroo</groupId>
+    <artifactId>taskroo-authentication</artifactId>
     <version>0.4.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
-    <name>gtweb-authentication</name>
+    <name>taskroo-authentication</name>
     <url>http://www.aetas.pl</url>
 
     <properties>
@@ -18,7 +18,7 @@
     </properties>
 
     <build>
-        <finalName>gtweb-authentication</finalName>
+        <finalName>taskroo-authentication</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -104,8 +104,8 @@
                 </executions>
                 <configuration>
                     <includes>
-                        <include>pl/aetas/gtweb/authn/integration/**/*Test.java</include>
-                        <include>pl/aetas/gtweb/authn/acceptance/**/*Test.java</include>
+                        <include>com/taskroo/authn/integration/**/*Test.java</include>
+                        <include>com/taskroo/authn/acceptance/**/*Test.java</include>
                     </includes>
                 </configuration>
             </plugin>
@@ -143,11 +143,11 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- GTWeb modules -->
+        <!-- TaskRoo modules -->
         <dependency>
-            <groupId>pl.aetas.gtweb</groupId>
-            <artifactId>gtweb-mongo-connector</artifactId>
-            <version>0.3.0</version>
+            <groupId>com.taskroo</groupId>
+            <artifactId>taskroo-mongo-connector</artifactId>
+            <version>0.4.0-SNAPSHOT</version>
         </dependency>
 
         <!-- Jersey -->
@@ -276,8 +276,8 @@
 
     <repositories>
         <repository>
-            <id>gtweb-mongo-connector-mvn-repo</id>
-            <url>https://raw.github.com/maniekq/gtweb-mongo-connector/mvn-repo/</url>
+            <id>taskroo-mongo-connector-mvn-repo</id>
+            <url>https://raw.github.com/maniekq/taskroo-mongo-connector/mvn-repo/</url>
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>

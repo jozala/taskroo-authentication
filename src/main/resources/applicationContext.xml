@@ -7,8 +7,8 @@
                            http://www.springframework.org/schema/context
                            http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:component-scan base-package="pl.aetas.gtweb.authn.data"/>
-    <context:component-scan base-package="pl.aetas.gtweb.authn.service"/>
+    <context:component-scan base-package="com.taskroo.authn.data"/>
+    <context:component-scan base-package="com.taskroo.authn.service"/>
 
     <import resource="dataContext.xml" />
 
