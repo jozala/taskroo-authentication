@@ -11,6 +11,7 @@ public class Session implements Serializable {
     private String userId;
     private Date createTime;
     private Date lastAccessedTime;
+    private String rememberMeToken;
 
     public String getSessionId() {
         return sessionId;
@@ -42,5 +43,13 @@ public class Session implements Serializable {
 
     public void setLastAccessedTime(Date lastAccessedTime) {
         this.lastAccessedTime = lastAccessedTime;
+    }
+
+    public String getRememberMeToken() {
+        return rememberMeToken;
+    }
+
+    public void setRememberMeToken(String rememberMeTokenKey) {
+        this.rememberMeToken = rememberMeTokenKey;
     }
 }

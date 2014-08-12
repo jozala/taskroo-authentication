@@ -13,4 +13,8 @@
         <constructor-arg value="users" />
     </bean>
 
+    <bean name="rememberMeTokensCollection" factory-bean="collectionsFactory" factory-method="getCollection">
+        <constructor-arg value="rememberMeTokens" />
+    </bean>
+
 </beans>

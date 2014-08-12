@@ -1,4 +1,5 @@
 package com.taskroo.authn.service
+import com.taskroo.authn.data.RememberMeTokenDao
 import com.taskroo.authn.data.SessionDao
 import com.taskroo.authn.data.UserDao
 import spock.lang.Specification
@@ -10,11 +11,13 @@ class AuthenticationServiceTest extends Specification {
     // mocks
     SessionDao sessionDao
     UserDao userDao
+    RememberMeTokenDao rememberMeTokenDao
 
     def setup() {
         sessionDao = Mock(SessionDao)
         userDao = Mock(UserDao)
-        authenticationService = new AuthenticationService(sessionDao, userDao)
+        rememberMeTokenDao = Mock(RememberMeTokenDao)
+        authenticationService = new AuthenticationService(sessionDao, userDao, rememberMeTokenDao)
     }
 
     def "should remove session when logout"() {

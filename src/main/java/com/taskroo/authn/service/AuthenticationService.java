@@ -1,6 +1,13 @@
 package com.taskroo.authn.service;
 
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import com.taskroo.authn.data.RememberMeTokenDao;
+import com.taskroo.authn.data.SessionDao;
+import com.taskroo.authn.data.UserDao;
+import com.taskroo.authn.domain.RememberMeToken;
+import com.taskroo.authn.domain.Session;
+import com.taskroo.authn.domain.User;
+import com.taskroo.authn.domain.UserCredentials;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -8,11 +15,6 @@ import com.wordnik.swagger.annotations.ApiResponses;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
-import com.taskroo.authn.data.SessionDao;
-import com.taskroo.authn.data.UserDao;
-import com.taskroo.authn.domain.Session;
-import com.taskroo.authn.domain.User;
-import com.taskroo.authn.domain.UserCredentials;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -32,13 +34,15 @@ public class AuthenticationService {
 
     private final SessionDao sessionDao;
     private final UserDao userDao;
+    private final RememberMeTokenDao rememberMeTokenDao;
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Inject
-    public AuthenticationService(SessionDao sessionDao, UserDao userDao) {
+    public AuthenticationService(SessionDao sessionDao, UserDao userDao, RememberMeTokenDao rememberMeTokenDao) {
         this.sessionDao = sessionDao;
         this.userDao = userDao;
+        this.rememberMeTokenDao = rememberMeTokenDao;
     }
 
     @Path("/login")
@@ -65,6 +69,12 @@ public class AuthenticationService {
 
         Session session = sessionDao.create(user);
         LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
+        if (credentials.isRememberMe()) {
+            RememberMeToken rememberMeToken = RememberMeToken.createNew(user.getUsername());
+            rememberMeTokenDao.saveToken(rememberMeToken);
+            session.setRememberMeToken(rememberMeToken.toString());
+            LOGGER.debug("Remember me token created: {}", rememberMeToken.toString());
+        }
         return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
 

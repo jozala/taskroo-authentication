@@ -9,4 +9,5 @@ class DaoTestBase extends Specification {
     private static final DB db = new MongoConnector('mongodb://localhost').getDatabase('taskroo-dao-tests-db')
     public static final DBCollection usersCollection = db.getCollection('users')
     public static final DBCollection sessionsCollection = db.getCollection('sessions')
+    public static final DBCollection rememberMeTokensCollection = db.getCollection('rememberMeTokens')
 }
