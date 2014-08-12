@@ -6,7 +6,7 @@ class UserCredentialsTest extends Specification {
 
     def "should throw exception when trying to create UserCredentials with empty username"() {
         when:
-        new UserCredentials(null, 'pass')
+        new UserCredentials(null, 'pass', false)
         then:
         thrown(NullPointerException)
 
