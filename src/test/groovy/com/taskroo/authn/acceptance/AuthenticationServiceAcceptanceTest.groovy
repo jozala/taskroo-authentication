@@ -3,6 +3,7 @@ package com.taskroo.authn.acceptance
 import com.mongodb.BasicDBObject
 import com.mongodb.DB
 import com.mongodb.DBCollection
+import com.taskroo.authn.domain.RememberMeToken
 import com.taskroo.mongo.MongoConnector
 import com.taskroo.testing.RunJetty
 import groovyx.net.http.ContentType
@@ -30,7 +31,8 @@ class AuthenticationServiceAcceptanceTest extends Specification {
     }
 
     void cleanup() {
-        rememberMeTokensCollections.remove(new BasicDBObject('username', USERNAME));
+        rememberMeTokensCollections.remove(new BasicDBObject('user_id', USERNAME))
+        sessionsCollection.remove(new BasicDBObject('user_id', USERNAME))
     }
 
     def "should return 201 and session when new session has been created"() {
@@ -102,7 +104,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         then: "response is 201"
         response.status == 201
         and: "rememberMe token gets created in the DB"
-        rememberMeTokensCollections.count(new BasicDBObject('username', USERNAME)) == 1
+        rememberMeTokensCollections.count(new BasicDBObject('user_id', USERNAME)) == 1
     }
 
     def "should return rememberMe token in response when login request sent with rememberMe set to true"() {
@@ -125,7 +127,71 @@ class AuthenticationServiceAcceptanceTest extends Specification {
                 body: [username: USERNAME, password: PASSWORD, rememberMe: false],
                 requestContentType: ContentType.JSON)
         then: "rememberMe token is not created in the DB"
-        rememberMeTokensCollections.count(new BasicDBObject('username', USERNAME)) == 0
+        rememberMeTokensCollections.count(new BasicDBObject('user_id', USERNAME)) == 0
+    }
+
+    def "should create session when request with existing rememberMeToken received"() {
+        given: 'rememberMeToken exists for existing customer'
+        def response = client.post(
+                path: 'authToken/login',
+                body: [username: USERNAME, password: PASSWORD, rememberMe: true],
+                requestContentType: ContentType.JSON)
+        String tokenString = response.data.rememberMeToken
+        def rememberMeToken = new RememberMeToken(tokenString.split(':')[0], tokenString.split(':')[1])
+        when: 'request is send to create session using rememberMeToken'
+        response = client.post(path: 'authToken/loginWithRememberMe',
+                    body: [username: rememberMeToken.username, key: rememberMeToken.key],
+                    requestContentType: ContentType.JSON)
+        then: 'response is 201 with sessionId'
+        response.status == 201
+        and: "session gets created in the DB"
+        sessionsCollection.count(new BasicDBObject([_id: response.data.sessionId, user_id: USERNAME])) == 1
+    }
+
+    def "should return 401 when trying to create a session with incorrect token"() {
+        when: 'request is send to create session using incorrect rememberMeToken'
+        def response = client.post(path: 'authToken/loginWithRememberMe',
+                body: [username: USERNAME, key: 'incorrectKey34567890123456789012'],
+                requestContentType: ContentType.JSON)
+        then: 'response should be 401'
+        response.status == 401
+        and: 'session is not created'
+        sessionsCollection.count(new BasicDBObject('user_id', USERNAME)) == 0
+    }
+
+    def "should remove rememberMeToken from DB when rememberMeToken is used"() {
+        given: 'rememberMeToken exists for existing customer'
+        def response = client.post(
+                path: 'authToken/login',
+                body: [username: USERNAME, password: PASSWORD, rememberMe: true],
+                requestContentType: ContentType.JSON)
+        String tokenString = response.data.rememberMeToken
+        def rememberMeToken = new RememberMeToken(tokenString.split(':')[0], tokenString.split(':')[1])
+        when: 'request is send to create session using rememberMeToken'
+        client.post(path: 'authToken/loginWithRememberMe',
+                body: rememberMeToken,
+                requestContentType: ContentType.JSON)
+        then: 'token is removed from DB'
+        rememberMeTokensCollections.count(new BasicDBObject('user_id': USERNAME, key: rememberMeToken.getHashedKey())) == 0
+    }
+
+    def "should create and return new rememberMeToken when log in using rememberMeToken"() {
+        given: 'rememberMeToken exists for existing customer'
+        def firstResponse = client.post(
+                path: 'authToken/login',
+                body: [username: USERNAME, password: PASSWORD, rememberMe: true],
+                requestContentType: ContentType.JSON)
+        String tokenString = firstResponse.data.rememberMeToken
+        def rememberMeToken = new RememberMeToken(tokenString.split(':')[0], tokenString.split(':')[1])
+        when: 'request is send to create session using rememberMeToken'
+        def response = client.post(path: 'authToken/loginWithRememberMe',
+                body: rememberMeToken,
+                requestContentType: ContentType.JSON)
+        then: 'new token key is returned'
+        response.data.rememberMeToken =~ /$USERNAME:[a-zA-Z0-9]{32}/
+        response.data.rememberMeToken != firstResponse.data.rememberMeToken
+        and: 'new token is created in DB'
+        rememberMeTokensCollections.count(new BasicDBObject('user_id', USERNAME)) == 1
     }
 
     void cleanupSpec() {

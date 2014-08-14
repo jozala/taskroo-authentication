@@ -70,10 +70,8 @@ public class AuthenticationService {
         Session session = sessionDao.create(user);
         LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
         if (credentials.isRememberMe()) {
-            RememberMeToken rememberMeToken = RememberMeToken.createNew(user.getUsername());
-            rememberMeTokenDao.saveToken(rememberMeToken);
+            RememberMeToken rememberMeToken = prepareNewRememberMeToken(user);
             session.setRememberMeToken(rememberMeToken.toString());
-            LOGGER.debug("Remember me token created: {}", rememberMeToken.toString());
         }
         return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
@@ -87,6 +85,35 @@ public class AuthenticationService {
             LOGGER.error("Password encrypting with salt to compare in log-in process failed.", e);
             throw new IllegalStateException("Password encrypting with salt to compare in log-in process failed", e);
         }
+    }
+
+    @Path("/loginWithRememberMe")
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create session for the user", notes = "Create session for user using rememberMeToken", response=Session.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "session created correctly"),
+            @ApiResponse(code = 401, message = "invalid rememberMeToken given")})
+    public Response createSessionWithRememberMeToken(RememberMeToken rememberMeToken) {
+        User user = userDao.findByUsername(rememberMeToken.getUsername());
+        if (!rememberMeTokenDao.tokenExists(rememberMeToken)) {
+            LOGGER.info("Incorrect rememberMeToken received for user: {}", rememberMeToken.getUsername());
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        Session session = sessionDao.create(user);
+        rememberMeTokenDao.remove(rememberMeToken);
+        RememberMeToken newRememberMeToken = prepareNewRememberMeToken(user);
+        session.setRememberMeToken(newRememberMeToken.toString());
+
+        return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
+    }
+
+    private RememberMeToken prepareNewRememberMeToken(User user) {
+        RememberMeToken rememberMeToken = RememberMeToken.createNew(user.getUsername());
+        rememberMeTokenDao.saveToken(rememberMeToken);
+        LOGGER.debug("Remember me token created: {}", rememberMeToken.toString());
+        return rememberMeToken;
     }
 
     @DELETE

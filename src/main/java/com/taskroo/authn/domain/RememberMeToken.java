@@ -1,5 +1,8 @@
 package com.taskroo.authn.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -15,7 +18,8 @@ public class RememberMeToken {
 
     private static final Logger LOGGER = LogManager.getLogger();
 
-    public RememberMeToken(String username, String key) {
+    @JsonCreator
+    public RememberMeToken(@JsonProperty("username") String username, @JsonProperty("key") String key) {
         this.username = Objects.requireNonNull(username);
         this.key = Objects.requireNonNull(key);
     }
@@ -37,6 +41,7 @@ public class RememberMeToken {
         return username + ":" + key;
     }
 
+    @JsonIgnore
     public String getHashedKey() {
 
         try {
