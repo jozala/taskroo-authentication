@@ -3,19 +3,23 @@ package com.taskroo.authn.data;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.springframework.stereotype.Repository;
-import com.taskroo.authn.domain.Role;
 import com.taskroo.authn.domain.Session;
-import com.taskroo.authn.domain.User;
+import org.springframework.stereotype.Repository;
 
 import javax.inject.Inject;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.List;
 
 @Repository
 public class SessionDao {
+
+    private static final String USER_ID_KEY = "user_id";
+    private static final String ID_KEY = "_id";
+    private static final String ROLES_KEY = "roles";
+    private static final String CREATE_TIME_KEY = "create_time";
+    private static final String LAST_ACCESSED_TIME_KEY = "last_accessed_time";
+    private static final String REMEMBERME_TOKEN_KEY = "rememberme_token";
 
     private DBCollection sessionsCollection;
 
@@ -24,43 +28,40 @@ public class SessionDao {
         this.sessionsCollection = sessionsCollection;
     }
 
-    public Session create(User user) {
-        String sessionId = UUID.randomUUID().toString();
-        Set<Integer> rolesInInt = convertRolesToIntegers(user.getRoles());
-        BasicDBObject sessionDbObject = new BasicDBObject("_id", sessionId)
-                .append("roles", rolesInInt)
-                .append("user_id", user.getUsername())
-                .append("create_time", new Date())
-                .append("last_accessed_time", new Date());
+    public void remove(String sessionId) {
+        sessionsCollection.remove(new BasicDBObject(ID_KEY, sessionId));
+    }
+
+    public void insert(Session session) {
+        BasicDBObject sessionDbObject = new BasicDBObject(ID_KEY, session.getSessionId())
+                .append(ROLES_KEY, session.getUserRoles())
+                .append(USER_ID_KEY, session.getUserId())
+                .append(CREATE_TIME_KEY, session.getCreateTime())
+                .append(LAST_ACCESSED_TIME_KEY, session.getCreateTime());
+
+        if (session.getRememberMeToken() != null) {
+            sessionDbObject.append(REMEMBERME_TOKEN_KEY, session.getRememberMeToken());
+        }
 
         sessionsCollection.insert(sessionDbObject);
 
-        return mapDbObjectToSession(sessionDbObject);
     }
 
-    private Set<Integer> convertRolesToIntegers(Set<Role> roles) {
-        Set<Integer> rolesInInt = new HashSet<>(roles.size());
-        for (Role role : roles) {
-            rolesInInt.add(role.intValue());
+    public Session findById(String sessionId) throws NonExistingResourceOperationException {
+        DBObject sessionDbObject = sessionsCollection.findOne(new BasicDBObject(ID_KEY, sessionId));
+        if (sessionDbObject == null) {
+            throw new NonExistingResourceOperationException("Session not found in DB");
         }
-        return rolesInInt;
-    }
+        String userId = sessionDbObject.get(USER_ID_KEY).toString();
+        List<Integer> userRoles = (List<Integer>) sessionDbObject.get(ROLES_KEY);
+        Date createTime = (Date) sessionDbObject.get(CREATE_TIME_KEY);
+        Date lastAccessedTime = (Date) sessionDbObject.get(LAST_ACCESSED_TIME_KEY);
+        String rememberMeToken = null;
+        if (sessionDbObject.get(REMEMBERME_TOKEN_KEY) != null) {
+            rememberMeToken = sessionDbObject.get(REMEMBERME_TOKEN_KEY).toString();
+        }
 
-    private Session mapDbObjectToSession(DBObject sessionDbObject) {
-        String userId = sessionDbObject.get("user_id").toString();
-        Date createTime = (Date) sessionDbObject.get("create_time");
-        Date lastAccessedTime = (Date) sessionDbObject.get("last_accessed_time");
-
-        Session session = new Session();
-        session.setSessionId(sessionDbObject.get("_id").toString());
-        session.setUserId(userId);
-        session.setCreateTime(createTime);
-        session.setLastAccessedTime(lastAccessedTime);
-
-        return session;
-    }
-
-    public void remove(String sessionId) {
-        sessionsCollection.remove(new BasicDBObject("_id", sessionId));
+        return new Session(sessionDbObject.get(ID_KEY).toString(),
+                userId, new HashSet<>(userRoles), createTime, lastAccessedTime, rememberMeToken);
     }
 }

@@ -1,6 +1,7 @@
 package com.taskroo.authn.service;
 
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+import com.taskroo.authn.data.NonExistingResourceOperationException;
 import com.taskroo.authn.data.RememberMeTokenDao;
 import com.taskroo.authn.data.SessionDao;
 import com.taskroo.authn.data.UserDao;
@@ -49,7 +50,7 @@ public class AuthenticationService {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create session for the user", notes = "Returns session containing tokenId required for authorization", response=Session.class)
+    @ApiOperation(value = "Create session for the user", notes = "Returns session containing tokenId required for authorization", response = Session.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "session created correctly"),
             @ApiResponse(code = 401, message = "user with given login and password not exists")})
@@ -67,12 +68,15 @@ public class AuthenticationService {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("Incorrect password").build());
         }
 
-        Session session = sessionDao.create(user);
-        LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
+        Session session;
         if (credentials.isRememberMe()) {
-            RememberMeToken rememberMeToken = prepareNewRememberMeToken(user);
-            session.setRememberMeToken(rememberMeToken.toString());
+            session = Session.createWithRememberMeToken(user);
+            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), session.getRememberMeToken().split(":")[1]));
+        } else {
+            session = Session.create(user);
         }
+        sessionDao.insert(session);
+        LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
         return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
     }
 
@@ -89,39 +93,50 @@ public class AuthenticationService {
 
     @Path("/loginWithRememberMe")
     @POST
+    @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create session for the user", notes = "Create session for user using rememberMeToken", response=Session.class)
+    @ApiOperation(value = "Create session for the user", notes = "Create session for user using rememberMeToken", response = Session.class)
     @ApiResponses(value = {
             @ApiResponse(code = 201, message = "session created correctly"),
-            @ApiResponse(code = 401, message = "invalid rememberMeToken given")})
-    public Response createSessionWithRememberMeToken(RememberMeToken rememberMeToken) {
-        User user = userDao.findByUsername(rememberMeToken.getUsername());
-        if (!rememberMeTokenDao.tokenExists(rememberMeToken)) {
-            LOGGER.info("Incorrect rememberMeToken received for user: {}", rememberMeToken.getUsername());
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+            @ApiResponse(code = 400, message = "invalid format of given rememberMe token"),
+            @ApiResponse(code = 401, message = "invalid rememberMe token given")})
+    public Response createSessionWithRememberMeToken(String rememberMeTokenString) {
+        try {
+            RememberMeToken rememberMeToken = RememberMeToken.fromString(rememberMeTokenString);
+
+            User user = userDao.findByUsername(rememberMeToken.getUsername());
+            if (!rememberMeTokenDao.tokenExists(rememberMeToken)) {
+                LOGGER.info("Incorrect rememberMeToken received for user: {}", rememberMeToken.getUsername());
+                return Response.status(Response.Status.UNAUTHORIZED).build();
+            }
+            rememberMeTokenDao.remove(rememberMeToken);
+            Session session = Session.createWithRememberMeToken(user);
+            sessionDao.insert(session);
+            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), session.getRememberMeToken().split(":")[1]));
+
+            return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST).entity("Invalid token").build();
         }
-        Session session = sessionDao.create(user);
-        rememberMeTokenDao.remove(rememberMeToken);
-        RememberMeToken newRememberMeToken = prepareNewRememberMeToken(user);
-        session.setRememberMeToken(newRememberMeToken.toString());
-
-        return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
-    }
-
-    private RememberMeToken prepareNewRememberMeToken(User user) {
-        RememberMeToken rememberMeToken = RememberMeToken.createNew(user.getUsername());
-        rememberMeTokenDao.saveToken(rememberMeToken);
-        LOGGER.debug("Remember me token created: {}", rememberMeToken.toString());
-        return rememberMeToken;
     }
 
     @DELETE
     @Path("/{sessionId}")
     @ApiOperation(value = "Delete session")
-    @ApiResponses(value = {@ApiResponse(code = 204, message = "session deleted")})
+    @ApiResponses(value = {
+            @ApiResponse(code = 204, message = "session deleted"),
+            @ApiResponse(code = 404, message = "session with given id not found")})
     public Response logout(@PathParam("sessionId") String sessionId) {
-        sessionDao.remove(sessionId);
-        return Response.noContent().build();
+        try {
+            Session session = sessionDao.findById(sessionId);
+            if (session.getRememberMeToken() != null) {
+                RememberMeToken rememberMeToken = RememberMeToken.fromString(session.getRememberMeToken());
+                rememberMeTokenDao.remove(rememberMeToken);
+            }
+            sessionDao.remove(sessionId);
+            return Response.noContent().build();
+        } catch (NonExistingResourceOperationException e) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 }

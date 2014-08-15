@@ -31,4 +31,32 @@ class RememberMeTokenTest extends Specification {
         then:
         hashedKey ==  Base64.encodeBase64String(MessageDigest.getInstance("SHA-1").digest(Base64.decodeBase64(notHashedKey)))
     }
+
+    def "should create token from string with username and key separated by colon"() {
+        given:
+        String rememberMeTokenString = "user123:qwertyuiopasdfghjklABzxcvbnmqwer"
+        when:
+        def rememberMeToken = RememberMeToken.fromString(rememberMeTokenString)
+        then:
+        rememberMeToken.username == 'user123'
+        rememberMeToken.key == 'qwertyuiopasdfghjklABzxcvbnmqwer'
+    }
+
+    def "should throw illegal format exception when token key is less then 32 characters long"() {
+        given:
+        String rememberMeTokenString = "user123:tooShortTokenKey"
+        when:
+        RememberMeToken.fromString(rememberMeTokenString)
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def "should throw exception when token string does not contains colon"() {
+        given:
+        String rememberMeTokenString = "user123;qwertyuiopasdfghjklABzxcvbnmqwer"
+        when:
+        RememberMeToken.fromString(rememberMeTokenString)
+        then:
+        thrown(IllegalArgumentException)
+    }
 }

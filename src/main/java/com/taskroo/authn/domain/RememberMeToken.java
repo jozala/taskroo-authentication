@@ -52,4 +52,19 @@ public class RememberMeToken {
         }
 
     }
+
+    public static RememberMeToken fromString(String rememberMeTokenString) throws IllegalArgumentException {
+        if (!rememberMeTokenString.contains(":")) {
+            throw new IllegalArgumentException("Incorrect remember me token given to parse");
+        }
+
+        String[] array = rememberMeTokenString.split(":");
+        String username = array[0];
+        String key = array[1];
+
+        if (key.length() != 32) {
+            throw new IllegalArgumentException("RememberMe token key has incorrect length");
+        }
+        return new RememberMeToken(username, key);
+    }
 }
