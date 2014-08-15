@@ -19,7 +19,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
 
     static RESTClient client = new RESTClient('http://localhost:8080/')
     private static final DB db = new MongoConnector('mongodb://localhost').getDatabase('taskroo')
-    public static final DBCollection sessionsCollection = db.getCollection("sessions")
+    public static final DBCollection securityTokensCollection = db.getCollection("securityTokens")
     public static final DBCollection usersCollection = db.getCollection("users")
     public static final DBCollection rememberMeTokensCollections = db.getCollection("rememberMeTokens")
 
@@ -33,32 +33,32 @@ class AuthenticationServiceAcceptanceTest extends Specification {
 
     void cleanup() {
         rememberMeTokensCollections.remove(new BasicDBObject('user_id', USERNAME))
-        sessionsCollection.remove(new BasicDBObject('user_id', USERNAME))
+        securityTokensCollection.remove(new BasicDBObject('user_id', USERNAME))
     }
 
-    def "should return 201 and session when new session has been created"() {
+    def "should return 201 and security token when new security token has been created"() {
         when: 'sending correct login and password to service'
         def response = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD],
                 requestContentType: ContentType.JSON)
-        then: "response is 201 with session information"
+        then: "response is 201 with security token information"
         response.status == 201
-        response.data.sessionId != null
-        and: "session gets created in the DB"
-        sessionsCollection.count(new BasicDBObject('_id', response.data.sessionId)) == 1
+        response.data.id != null
+        and: "security token gets created in the DB"
+        securityTokensCollection.count(new BasicDBObject('_id', response.data.id)) == 1
     }
 
-    def "should create session in DB with rememberMeToken when login request sent with rememberMe set to true"() {
+    def "should create security token in DB with rememberMeToken when login request sent with rememberMe set to true"() {
         when: 'sending correct login and password to service'
         def response = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD, rememberMe: true],
                 requestContentType: ContentType.JSON)
-        then: "session gets created in the DB with rememberMeToken"
-        def session = sessionsCollection.findOne(new BasicDBObject('_id', response.data.sessionId))
-        session.get('rememberme_token') != null
-        session.get('rememberme_token') == response.data.rememberMeToken
+        then: "security token gets created in the DB with rememberMeToken"
+        def securityTokenDb = securityTokensCollection.findOne(new BasicDBObject('_id', response.data.id))
+        securityTokenDb.get('rememberme_token') != null
+        securityTokenDb.get('rememberme_token') == response.data.rememberMeToken
     }
 
     def "should return 400 (bad request) when username not given"() {
@@ -93,36 +93,36 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         response.status == 401
     }
 
-    def "should remove session and return 204 when deleting session"() {
-        given: 'session exists'
+    def "should remove security token and return 204 when deleting security token"() {
+        given: 'security token exists'
         def createResponse = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD],
                 requestContentType: ContentType.JSON)
-        def sessionId = createResponse.data.sessionId
+        def securityTokenId = createResponse.data.id
         when:
-        def response = client.delete(path: "authToken/$sessionId")
+        def response = client.delete(path: "authToken/$securityTokenId")
         then:
         response.status == 204
-        sessionsCollection.findOne(new BasicDBObject('_id', sessionId)) == null
+        securityTokensCollection.findOne(new BasicDBObject('_id', securityTokenId)) == null
     }
 
-    def "should return 404 when trying to delete non-existing session"() {
+    def "should return 404 when trying to delete non-existing security token"() {
         when:
-        def response = client.delete(path: "authToken/nonExistingSessionId")
+        def response = client.delete(path: "authToken/nonExistingSecTokenId")
         then:
         response.status == 404
     }
 
-    def "should remove rememberMeToken used to create session when deleting session created with rememberMeToken"() {
+    def "should remove rememberMeToken used to create security token when deleting security token"() {
         given: 'rememberMeToken exists for existing customer'
         def response = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD, rememberMe: true],
                 requestContentType: ContentType.JSON)
         when: 'user sends request to logout'
-        client.delete(path: "authToken/$response.data.sessionId")
-        then: 'rememberMeToken related to the given session is removed from DB'
+        client.delete(path: "authToken/$response.data.id")
+        then: 'rememberMeToken related to the given security token is removed from DB'
         String tokenString = response.data.rememberMeToken
         def rememberMeToken = new RememberMeToken(tokenString.split(':')[0], tokenString.split(':')[1])
         rememberMeTokensCollections.count(new BasicDBObject('user_id': USERNAME, key: rememberMeToken.getHashedKey())) == 0
@@ -163,43 +163,43 @@ class AuthenticationServiceAcceptanceTest extends Specification {
         rememberMeTokensCollections.count(new BasicDBObject('user_id', USERNAME)) == 0
     }
 
-    def "should create session when request with existing rememberMeToken received"() {
+    def "should create security token when request with existing rememberMeToken received"() {
         given: 'rememberMeToken exists for existing customer'
         def response = client.post(
                 path: 'authToken/login',
                 body: [username: USERNAME, password: PASSWORD, rememberMe: true],
                 requestContentType: ContentType.JSON)
         String rememberMeTokenString = response.data.rememberMeToken
-        when: 'request is send to create session using rememberMeToken'
+        when: 'request is send to create security token using rememberMeToken'
         response = client.post(path: 'authToken/loginWithRememberMe',
                     body: rememberMeTokenString,
                     requestContentType: ContentType.TEXT)
-        then: 'response is 201 with sessionId'
+        then: 'response is 201 with securityToken ID'
         response.status == 201
-        and: "session gets created in the DB"
-        sessionsCollection.count(new BasicDBObject([_id: response.data.sessionId, user_id: USERNAME])) == 1
+        and: "security token gets created in the DB"
+        securityTokensCollection.count(new BasicDBObject([_id: response.data.id, user_id: USERNAME])) == 1
     }
 
-    def "should return 401 when trying to create a session with incorrect token"() {
-        when: 'request is send to create session using incorrect rememberMeToken'
+    def "should return 401 when trying to create a security token with incorrect token"() {
+        when: 'request is send to create security token using incorrect rememberMeToken'
         def response = client.post(path: 'authToken/loginWithRememberMe',
                 body: "$USERNAME:incorrectKey34567890123456789012",
                 requestContentType: ContentType.TEXT)
         then: 'response should be 401'
         response.status == 401
-        and: 'session is not created'
-        sessionsCollection.count(new BasicDBObject('user_id', USERNAME)) == 0
+        and: 'security token is not created'
+        securityTokensCollection.count(new BasicDBObject('user_id', USERNAME)) == 0
     }
 
-    def "should return 400 when trying to create session with invalid rememberMe token"() {
-        when: 'request is send to create session using invalid rememberMeToken'
+    def "should return 400 when trying to create security token with invalid rememberMe token"() {
+        when: 'request is send to create security token using invalid rememberMeToken'
         def response = client.post(path: 'authToken/loginWithRememberMe',
                 body: "$USERNAME:keyWithTooLessCharacters",
                 requestContentType: ContentType.TEXT)
         then: 'response should be 400'
         response.status == 400
-        and: 'session is not created'
-        sessionsCollection.count(new BasicDBObject('user_id', USERNAME)) == 0
+        and: 'security token is not created'
+        securityTokensCollection.count(new BasicDBObject('user_id', USERNAME)) == 0
     }
 
     def "should remove rememberMeToken from DB when rememberMeToken is used"() {
@@ -209,7 +209,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
                 body: [username: USERNAME, password: PASSWORD, rememberMe: true],
                 requestContentType: ContentType.JSON)
         String rememberMeTokenString = response.data.rememberMeToken
-        when: 'request is send to create session using rememberMeToken'
+        when: 'request is send to create security token using rememberMeToken'
         client.post(path: 'authToken/loginWithRememberMe',
                 body: rememberMeTokenString,
                 requestContentType: ContentType.TEXT)
@@ -225,7 +225,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
                 body: [username: USERNAME, password: PASSWORD, rememberMe: true],
                 requestContentType: ContentType.JSON)
         String rememberMeTokenString = firstResponse.data.rememberMeToken
-        when: 'request is send to create session using rememberMeToken'
+        when: 'request is send to create security token using rememberMeToken'
         def response = client.post(path: 'authToken/loginWithRememberMe',
                 body: rememberMeTokenString,
                 requestContentType: ContentType.TEXT)

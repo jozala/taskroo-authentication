@@ -5,8 +5,8 @@
 
     <import resource="classpath:mongo-connector-context.xml" />
 
-    <bean name="sessionsCollection" factory-bean="collectionsFactory" factory-method="getCollection">
-        <constructor-arg value="sessions" />
+    <bean name="securityTokensCollection" factory-bean="collectionsFactory" factory-method="getCollection">
+        <constructor-arg value="securityTokens" />
     </bean>
 
     <bean name="usersCollection" factory-bean="collectionsFactory" factory-method="getCollection">

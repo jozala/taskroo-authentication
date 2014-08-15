@@ -3,10 +3,10 @@ package com.taskroo.authn.service;
 import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 import com.taskroo.authn.data.NonExistingResourceOperationException;
 import com.taskroo.authn.data.RememberMeTokenDao;
-import com.taskroo.authn.data.SessionDao;
+import com.taskroo.authn.data.SecurityTokenDao;
 import com.taskroo.authn.data.UserDao;
 import com.taskroo.authn.domain.RememberMeToken;
-import com.taskroo.authn.domain.Session;
+import com.taskroo.authn.domain.SecurityToken;
 import com.taskroo.authn.domain.User;
 import com.taskroo.authn.domain.UserCredentials;
 import com.wordnik.swagger.annotations.Api;
@@ -30,18 +30,18 @@ import java.security.spec.InvalidKeySpecException;
 
 @Component
 @Path("authToken")
-@Api(value = "authToken", description = "Session management")
+@Api(value = "authToken", description = "Security token management")
 public class AuthenticationService {
 
-    private final SessionDao sessionDao;
+    private final SecurityTokenDao securityTokenDao;
     private final UserDao userDao;
     private final RememberMeTokenDao rememberMeTokenDao;
 
     private static final Logger LOGGER = LogManager.getLogger();
 
     @Inject
-    public AuthenticationService(SessionDao sessionDao, UserDao userDao, RememberMeTokenDao rememberMeTokenDao) {
-        this.sessionDao = sessionDao;
+    public AuthenticationService(SecurityTokenDao securityTokenDao, UserDao userDao, RememberMeTokenDao rememberMeTokenDao) {
+        this.securityTokenDao = securityTokenDao;
         this.userDao = userDao;
         this.rememberMeTokenDao = rememberMeTokenDao;
     }
@@ -50,9 +50,9 @@ public class AuthenticationService {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create session for the user", notes = "Returns session containing tokenId required for authorization", response = Session.class)
+    @ApiOperation(value = "Create security token for the user", notes = "Returns security token containing tokenId required for authorization", response = SecurityToken.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "session created correctly"),
+            @ApiResponse(code = 201, message = "security token created correctly"),
             @ApiResponse(code = 401, message = "user with given login and password not exists")})
     public Response login(UserCredentials credentials) {
         LOGGER.debug("Login request received for user " + credentials.getUsername());
@@ -68,16 +68,16 @@ public class AuthenticationService {
             throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("Incorrect password").build());
         }
 
-        Session session;
+        SecurityToken securityToken;
         if (credentials.isRememberMe()) {
-            session = Session.createWithRememberMeToken(user);
-            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), session.getRememberMeToken().split(":")[1]));
+            securityToken = SecurityToken.createWithRememberMeToken(user);
+            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), securityToken.getRememberMeToken().split(":")[1]));
         } else {
-            session = Session.create(user);
+            securityToken = SecurityToken.create(user);
         }
-        sessionDao.insert(session);
+        securityTokenDao.insert(securityToken);
         LOGGER.debug("Authentication token created for user {}", credentials.getUsername());
-        return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
+        return Response.created(URI.create("authToken/" + securityToken.getId())).entity(securityToken).build();
     }
 
     private String getEncryptedPassword(String unencryptedPassword, String salt) {
@@ -95,12 +95,12 @@ public class AuthenticationService {
     @POST
     @Consumes(MediaType.TEXT_PLAIN)
     @Produces(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create session for the user", notes = "Create session for user using rememberMeToken", response = Session.class)
+    @ApiOperation(value = "Create security token for the user", notes = "Create security token for user using rememberMeToken", response = SecurityToken.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "session created correctly"),
+            @ApiResponse(code = 201, message = "security token created correctly"),
             @ApiResponse(code = 400, message = "invalid format of given rememberMe token"),
             @ApiResponse(code = 401, message = "invalid rememberMe token given")})
-    public Response createSessionWithRememberMeToken(String rememberMeTokenString) {
+    public Response createSecurityTokenWithRememberMeToken(String rememberMeTokenString) {
         try {
             RememberMeToken rememberMeToken = RememberMeToken.fromString(rememberMeTokenString);
 
@@ -110,30 +110,30 @@ public class AuthenticationService {
                 return Response.status(Response.Status.UNAUTHORIZED).build();
             }
             rememberMeTokenDao.remove(rememberMeToken);
-            Session session = Session.createWithRememberMeToken(user);
-            sessionDao.insert(session);
-            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), session.getRememberMeToken().split(":")[1]));
+            SecurityToken securityToken = SecurityToken.createWithRememberMeToken(user);
+            securityTokenDao.insert(securityToken);
+            rememberMeTokenDao.saveToken(new RememberMeToken(user.getUsername(), securityToken.getRememberMeToken().split(":")[1]));
 
-            return Response.created(URI.create("authToken/" + session.getSessionId())).entity(session).build();
+            return Response.created(URI.create("authToken/" + securityToken.getId())).entity(securityToken).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity("Invalid token").build();
         }
     }
 
     @DELETE
-    @Path("/{sessionId}")
-    @ApiOperation(value = "Delete session")
+    @Path("/{securityTokenId}")
+    @ApiOperation(value = "Delete security token")
     @ApiResponses(value = {
-            @ApiResponse(code = 204, message = "session deleted"),
-            @ApiResponse(code = 404, message = "session with given id not found")})
-    public Response logout(@PathParam("sessionId") String sessionId) {
+            @ApiResponse(code = 204, message = "security token deleted"),
+            @ApiResponse(code = 404, message = "security token with given id not found")})
+    public Response logout(@PathParam("securityTokenId") String securityTokenId) {
         try {
-            Session session = sessionDao.findById(sessionId);
-            if (session.getRememberMeToken() != null) {
-                RememberMeToken rememberMeToken = RememberMeToken.fromString(session.getRememberMeToken());
+            SecurityToken securityToken = securityTokenDao.findById(securityTokenId);
+            if (securityToken.getRememberMeToken() != null) {
+                RememberMeToken rememberMeToken = RememberMeToken.fromString(securityToken.getRememberMeToken());
                 rememberMeTokenDao.remove(rememberMeToken);
             }
-            sessionDao.remove(sessionId);
+            securityTokenDao.remove(securityTokenId);
             return Response.noContent().build();
         } catch (NonExistingResourceOperationException e) {
             return Response.status(Response.Status.NOT_FOUND).build();
