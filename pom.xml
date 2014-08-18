@@ -4,7 +4,7 @@
 
     <groupId>com.taskroo</groupId>
     <artifactId>taskroo-authentication</artifactId>
-    <version>0.4.0</version>
+    <version>0.5.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <name>taskroo-authentication</name>
