@@ -50,7 +50,7 @@ public class JettyRunner {
 
     public static void stop() {
         if (server == null) {
-            LOGGER.info("Jetty server hos not been started so it will not be stopped");
+            LOGGER.info("Jetty server has not been started so it will not be stopped");
             return;
         }
         try {
