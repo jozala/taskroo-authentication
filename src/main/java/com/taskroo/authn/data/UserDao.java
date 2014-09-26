@@ -17,8 +17,8 @@ public class UserDao {
     public static final String ID_KEY = "_id";
     public static final String SALT_KEY = "salt";
     public static final String ENABLED_KEY = "enabled";
-    public static final String FIRST_NAME_KEY = "first_name";
-    public static final String LAST_NAME_KEY = "last_name";
+    public static final String FIRST_NAME_KEY = "firstName";
+    public static final String LAST_NAME_KEY = "lastName";
     public static final String PASSWORD_KEY = "password";
     public static final String EMAIL_KEY = "email";
     public static final String ROLES_KEY = "roles";

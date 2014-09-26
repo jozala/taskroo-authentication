@@ -25,7 +25,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
 
     def setupSpec() {
         cleanup()
-        def userMap = [_id: USERNAME, password: 'B/HBxKhgF8mALBaOt+KUQRvWthU=', enabled: true, first_name: 'fname', last_name: 'lname',
+        def userMap = [_id: USERNAME, password: 'B/HBxKhgF8mALBaOt+KUQRvWthU=', enabled: true, firstName: 'fname', lastName: 'lname',
                        email: 'email@aetas.pl', roles: ['USER'], salt: 'F8Sgh1uJmuld8J7t9R+JOgq+vn8=']
         usersCollection.insert(new BasicDBObject(userMap))
         client.handler.failure = { it }

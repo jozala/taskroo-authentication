@@ -19,7 +19,7 @@ class UserDaoTest extends DaoTestBase {
     def "should retrieve from db customer with matching username and password"() {
         given:
         usersCollection.insert(new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
-                                                  first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
+                                                  firstName: 'Fnametest', lastName: 'Lnametest', email: 'some@email.co.uk',
                                                   roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
         def user = userDao.findByUsername('someUsername')
@@ -38,7 +38,7 @@ class UserDaoTest extends DaoTestBase {
     def "should return customer when customer with given username exists"() {
         given:
         usersCollection.insert(new BasicDBObject([_id: 'someUsername', password: 'givenPassword', enabled: true,
-                                                  first_name: 'Fnametest', last_name: 'Lnametest', email: 'some@email.co.uk',
+                                                  firstName: 'Fnametest', lastName: 'Lnametest', email: 'some@email.co.uk',
                                                   roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
         def user = userDao.findByUsername('someUsername')
