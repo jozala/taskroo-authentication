@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Optional;
 
 
 @Component
@@ -56,12 +57,12 @@ public class AuthenticationService {
             @ApiResponse(code = 401, message = "user with given login and password not exists")})
     public Response login(UserCredentials credentials) {
         LOGGER.debug("Login request received for user " + credentials.getUsername());
-        User user = userDao.findByUsername(credentials.getUsername());
-        if (user == null) {
-            LOGGER.debug("User {} not found", credentials.getUsername());
-            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("User not found").build());
+        Optional<User> userOptional = userDao.findByUsername(credentials.getUsername());
+        User user = userOptional.orElseThrow(() -> new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("User not found").build()));
+        if (!user.isEnabled()) {
+            LOGGER.debug("User {} is not active and could not be logged in", credentials.getUsername());
+            throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("User is not active").build());
         }
-
         String encodedPassword = getEncryptedPassword(credentials.getPassword(), user.getSalt());
         if (!user.getPassword().equals(encodedPassword)) {
             LOGGER.debug("Password incorrect for user {}", credentials.getUsername());
@@ -104,10 +105,15 @@ public class AuthenticationService {
         try {
             RememberMeToken rememberMeToken = RememberMeToken.fromString(rememberMeTokenString);
 
-            User user = userDao.findByUsername(rememberMeToken.getUsername());
+            Optional<User> userOptional = userDao.findByUsername(rememberMeToken.getUsername());
+            User user = userOptional.orElseThrow(() -> new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("User not found").build()));
+            if (!user.isEnabled()) {
+                LOGGER.debug("User {} is not active and could not be logged in with rememberMeToken", user.getUsername());
+                throw new WebApplicationException(Response.status(Response.Status.UNAUTHORIZED).entity("User is not active").build());
+            }
             if (!rememberMeTokenDao.tokenExists(rememberMeToken)) {
                 LOGGER.info("Incorrect rememberMeToken received for user: {}", rememberMeToken.getUsername());
-                return Response.status(Response.Status.UNAUTHORIZED).build();
+                return Response.status(Response.Status.UNAUTHORIZED).entity("Incorrect rememberMeToken").build();
             }
             rememberMeTokenDao.remove(rememberMeToken);
             SecurityToken securityToken = SecurityToken.createWithRememberMeToken(user);

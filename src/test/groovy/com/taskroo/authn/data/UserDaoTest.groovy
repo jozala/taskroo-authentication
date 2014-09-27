@@ -22,7 +22,7 @@ class UserDaoTest extends DaoTestBase {
                                                   firstName: 'Fnametest', lastName: 'Lnametest', email: 'some@email.co.uk',
                                                   roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
-        def user = userDao.findByUsername('someUsername')
+        def user = userDao.findByUsername('someUsername').get()
         then:
         user.name == 'someUsername'
         user.password == 'givenPassword'
@@ -41,15 +41,15 @@ class UserDaoTest extends DaoTestBase {
                                                   firstName: 'Fnametest', lastName: 'Lnametest', email: 'some@email.co.uk',
                                                   roles: ['ADMIN', 'USER'], salt: 'someSaltValue']))
         when:
-        def user = userDao.findByUsername('someUsername')
+        def user = userDao.findByUsername('someUsername').get()
         then:
         user.name == 'someUsername'
     }
 
-    def "should return null when customer with given username does not exists"() {
+    def "should return empty Optional when customer with given username does not exists"() {
         when:
         def user = userDao.findByUsername('nonExistingCustomer')
         then:
-        user == null
+        user == Optional.empty()
     }
 }

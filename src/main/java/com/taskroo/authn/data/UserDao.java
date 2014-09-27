@@ -4,12 +4,13 @@ import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import org.springframework.stereotype.Repository;
 import com.taskroo.authn.domain.Role;
 import com.taskroo.authn.domain.User;
+import org.springframework.stereotype.Repository;
 
 import javax.inject.Inject;
 import java.util.Objects;
+import java.util.Optional;
 
 @Repository
 public class UserDao {
@@ -30,13 +31,13 @@ public class UserDao {
         this.usersCollection = usersCollection;
     }
 
-    public User findByUsername(String username) {
+    public Optional<User> findByUsername(String username) {
         Objects.requireNonNull(username);
         DBObject userDbObject = usersCollection.findOne(new BasicDBObject(ID_KEY, username));
         if (userDbObject == null) {
-            return null;
+            return Optional.empty();
         }
-        return mapUserDbObjectToUser(userDbObject);
+        return Optional.of(mapUserDbObjectToUser(userDbObject));
     }
 
     private User mapUserDbObjectToUser(DBObject userDbObject) {
