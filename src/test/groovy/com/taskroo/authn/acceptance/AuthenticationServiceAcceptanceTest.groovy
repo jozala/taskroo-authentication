@@ -18,7 +18,7 @@ class AuthenticationServiceAcceptanceTest extends Specification {
     static final String PASSWORD = 'secretPass'
 
     static RESTClient client = new RESTClient('http://localhost:8080/')
-    private static final DB db = new MongoConnector('mongodb://localhost').getDatabase('taskroo')
+    private static final DB db = new MongoConnector('localhost', '27017').getDatabase('taskroo')
     public static final DBCollection securityTokensCollection = db.getCollection("securityTokens")
     public static final DBCollection usersCollection = db.getCollection("users")
     public static final DBCollection rememberMeTokensCollections = db.getCollection("rememberMeTokens")
