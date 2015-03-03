@@ -7,3 +7,5 @@ after_success:
 
 services:
   - mongodb
+
+env: MONGO_PORT_27017_TCP_ADDR=localhost MONGO_PORT_27017_TCP_PORT=27017
