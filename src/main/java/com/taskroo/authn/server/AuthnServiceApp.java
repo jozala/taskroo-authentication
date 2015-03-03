@@ -10,6 +10,7 @@ public class AuthnServiceApp extends ResourceConfig {
     public AuthnServiceApp() {
         register(ExceptionListener.class);
         register(RolesAllowedDynamicFeature.class);
+        register(CORSResponseFilter.class);
         packages("com.taskroo.authn.service", "com.wordnik.swagger.jersey.listing");
     }
 }
