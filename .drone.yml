@@ -1,0 +1,20 @@
+image: taskroo/taskroo-dev
+cache:
+  - /root/.m2/repository
+env:
+  - DOCKER_LOGIN=$$dockerHubLogin
+  - DOCKER_PASSWORD=$$dockerHubPassword
+  - DOCKER_EMAIL=$$emailMariusz
+script:
+  - set -e
+  - wrapdocker &
+  - mvn -Pdeploy -DargLine="-DMONGO_PORT_27017_TCP_PORT=$MONGO_PORT_27017_TCP_PORT -DMONGO_PORT_27017_TCP_ADDR=$MONGO_PORT_27017_TCP_ADDR"
+  - docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD -e $DOCKER_EMAIL
+  - docker push taskroo/taskroo-api
+  - start-stop-daemon --stop --pidfile "/var/run/docker.pid"
+services:
+  - maniekq/mongo:2.6
+notify:
+  email:
+    recipients:
+      - {{emailMariusz}}
