@@ -18,3 +18,4 @@ notify:
   email:
     recipients:
       - {{emailMariusz}}
+
