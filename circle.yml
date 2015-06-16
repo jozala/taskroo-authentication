@@ -1,0 +1,21 @@
+machine:
+  java:
+    version: oraclejdk8
+  services:
+    - docker
+  environment:
+    MONGO_PORT_27017_TCP_PORT: 27018
+    MONGO_PORT_27017_TCP_ADDR: localhost
+test:
+  override:
+    - docker run -d -p $MONGO_PORT_27017_TCP_PORT:27017 --name mongo -d mongo:2.6; sleep 10
+    - mkdir ~/.taskroo
+    - cp src/main/resources/local.properties ~/.taskroo/.
+    - mvn integration-test 
+deployment:
+  dockerhub:
+    branch: master
+    commands:
+      - mvn -Pdeploy
+      - docker login -u $DOCKER_HUB_LOGIN -p $DOCKER_HUB_PASSWORD -e $DOCKER_EMAIL
+      - docker push taskroo/taskroo-authentication

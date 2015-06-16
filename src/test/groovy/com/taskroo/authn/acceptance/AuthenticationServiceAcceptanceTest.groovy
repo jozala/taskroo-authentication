@@ -18,8 +18,9 @@ class AuthenticationServiceAcceptanceTest extends Specification {
     static final String PASSWORD = 'secretPass'
 
     static RESTClient client = new RESTClient('http://localhost:8080/')
-    private static final DB db = new MongoConnector(System.properties.getProperty('MONGO_PORT_27017_TCP_ADDR', 'localhost'),
-            System.properties.getProperty('MONGO_PORT_27017_TCP_PORT', '27017')).getDatabase('taskroo')
+    private static final String MONGO_ADDR = System.getenv('MONGO_PORT_27017_TCP_ADDR') ?: 'localhost'
+    private static final String MONGO_PORT = System.getenv('MONGO_PORT_27017_TCP_PORT') ?: '27017'
+    private static final DB db = new MongoConnector(MONGO_ADDR, MONGO_PORT).getDatabase('taskroo')
     public static final DBCollection securityTokensCollection = db.getCollection("securityTokens")
     public static final DBCollection usersCollection = db.getCollection("users")
     public static final DBCollection rememberMeTokensCollections = db.getCollection("rememberMeTokens")
