@@ -6,6 +6,9 @@ machine:
   environment:
     MONGO_PORT_27017_TCP_PORT: 27018
     MONGO_PORT_27017_TCP_ADDR: localhost
+dependencies:
+  pre:
+    - sudo service docker stop; sudo curl -L -o /usr/bin/docker 'http://s3-external-1.amazonaws.com/circle-downloads/docker-1.6.0-circleci'; sudo chmod 0755 /usr/bin/docker; sudo service docker start; true
 test:
   override:
     - docker run -d -p $MONGO_PORT_27017_TCP_PORT:27017 --name mongo -d mongo:2.6; sleep 10
