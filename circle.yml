@@ -9,8 +9,6 @@ machine:
 test:
   override:
     - docker run -d -p $MONGO_PORT_27017_TCP_PORT:27017 --name mongo -d mongo:2.6; sleep 10
-    - mkdir ~/.taskroo
-    - cp src/main/resources/local.properties ~/.taskroo/.
     - mvn integration-test 
 deployment:
   dockerhub:
